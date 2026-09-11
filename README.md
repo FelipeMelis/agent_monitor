@@ -8,6 +8,11 @@ validated.
 The prototype reads local JSONL transcripts and does not send their contents to
 any server.
 
+![Agent Monitor privacy-safe mockup](assets/agent-monitor-mockup.png)
+
+*Privacy-safe product mockup using fictional projects and statuses; it is not
+a live session screenshot.*
+
 ## Current MVP
 
 - Discovers recent Claude Code sessions under `~/.claude/projects`.
