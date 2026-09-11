@@ -77,6 +77,12 @@ state, action, or reason changes:
 agent-monitor --debug --watch
 ```
 
+## Install the session hooks
+
+Transcript monitoring works without hooks, but terminal focus needs a mapping
+between each agent session and its terminal tab. Install the hooks for each
+provider you use, after completing the development setup above.
+
 Inspect whether passive live hooks are configured:
 
 ```bash
@@ -89,6 +95,36 @@ Preview the exact provider configuration fragments without installing them:
 agent-monitor --print-hook-config claude
 agent-monitor --print-hook-config codex
 ```
+
+These commands print JSON only; they do not install anything. Generate the
+fragments from the environment you will use to run Agent Monitor: the commands
+include the absolute path to that environment's `agent-monitor-hook`.
+
+1. Back up any existing provider configuration before editing it.
+2. Merge the Claude fragment into `~/.claude/settings.json`, and the Codex
+   fragment into `~/.codex/hooks.json`. Create a missing file using its complete
+   fragment. For an existing file, preserve all other settings and append the
+   monitor's groups to each event's existing array under `hooks`. Do not replace
+   existing hooks or add a second top-level `hooks` key. Skip identical monitor
+   entries if they are already installed.
+3. In the Codex fragment, set the `SessionEnd` handler's `timeout` to `3`.
+   The current generator emits `5`, but Codex permits at most three seconds for
+   this event. Other generated timeouts can remain unchanged.
+4. Open Codex and use `/hooks` to review and trust the new monitor entries.
+   Start or resume a fresh session after trusting them so `SessionStart` can
+   create its terminal mapping. Restart or resume Claude sessions as well so
+   they load the new configuration.
+5. Run `agent-monitor --hooks-status` again. It should report each installed
+   provider as configured. This checks configuration references only; it does
+   not verify Codex trust, hook execution, or an individual terminal mapping.
+
+For example, if `SessionStart` already has a vault or terminal-status hook,
+keep that group and append the monitor's generated `SessionStart` group.
+Repeat the merge for the other events in the fragment.
+
+See the [Codex hook reference](https://learn.chatgpt.com/docs/hooks) and
+[Claude hook reference](https://code.claude.com/docs/en/hooks) for provider
+configuration and lifecycle details.
 
 The generated hooks invoke `agent-monitor-hook`. The bridge always exits
 without making an approval decision. It stores only provider, session ID,
@@ -126,6 +162,54 @@ opaque session identifier, and an update timestamp. Mappings expire after seven
 days. New or resumed provider sessions capture their mapping through the
 passive `SessionStart` hook. macOS may request permission for Python or
 Agent Monitor to control iTerm2 the first time its terminal arrow is clicked.
+
+## Keyboard shortcuts
+
+Agent Monitor must be running for these global shortcuts to work.
+
+| Shortcut | Action |
+| --- | --- |
+| Option + Command + A (`⌥⌘A`) | Show or hide the panel |
+| Option + Command + J (`⌥⌘J`) | Focus the terminal of the longest-waiting session |
+| Option + Command + P (`⌥⌘P`) | Pause or resume monitoring |
+
+Use Command, not Control. Pressing `⌥⌘A` repeatedly alternates between showing
+and hiding the panel. `⌥⌘J` does nothing when no session is waiting; it does not
+choose a running session or simply focus the currently selected row. The menu
+bar also provides the corresponding actions.
+
+## Troubleshooting terminal focus
+
+If `⌥⌘J` highlights a session in the notch instead of focusing its terminal,
+read the message in the session's detail card:
+
+- **Terminal not linked:** install the hooks above, trust them in Codex, and
+  restart or resume that agent in its terminal tab. Transcript discovery alone
+  cannot establish the tab mapping.
+- **Terminal tab unavailable:** the saved tab may have closed or changed.
+  Resume the session in the desired terminal tab to refresh its mapping.
+
+Terminal focus supports iTerm2 and Terminal.app. Sessions started in other
+terminals or a desktop/IDE agent interface do not get a supported terminal
+mapping. If macOS requests Automation permission to control the terminal,
+allow it for the Python or Agent Monitor process you launched. Screen Recording
+permission is not needed.
+
+To check a specific linked session, click its terminal arrow. To test `⌥⌘J`,
+wait for an actual approval or input request in that session, switch to another
+app, and press the shortcut. If the menu-bar jump action works but the shortcut
+does not, check for another app using the same shortcut and ensure only one
+Agent Monitor instance is running.
+
+### Restore after reinstalling macOS or moving the project
+
+Recreate the Python environment and install the dependencies using the setup
+steps above. Generate new hook fragments: an old configuration may point to a
+previous username, project location, or Python environment. Replace obsolete
+Agent Monitor hook entries with the new ones while preserving unrelated hooks,
+then review changed Codex entries through `/hooks` and restart or resume your
+agent sessions. Reinstalling the monitor alone does not restore terminal
+mappings or provider hooks.
 
 ## Tests
 
