@@ -235,3 +235,7 @@ payments, licence activation, or automatic updates.
 
 This project is an independent implementation. Do not copy branding, source
 code, icons, screenshots, or other assets from similarly positioned products.
+
+## License
+
+Agent Monitor is available under the [MIT License](LICENSE).
